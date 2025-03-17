@@ -1,56 +1,92 @@
-function [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_anc(inpath, infile);
+function [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_anc(inpath, infile)
 %OPEN_ANC is used to open analog data files from Motion Analysis Realtime
 %   output (*.anc).  The number of channels, samp rate and range are determined
 %   from the file header.
 %
-% Last modified:    Amy Silder; October 7, 2005
+% Written by Sam Hamner, March 17, 2025
+    % Construct the full file path
+    filename = fullfile(inpath, infile);
+    fileroot = extractBefore(infile,'.');
 
-infile=[infile(1:length(infile)-3) 'anc'];
-fid=fopen([inpath infile],'r');
-fileroot = infile(1:length(infile)-4);
-disp(['Opening file...' inpath infile] );
+    % Open the file
+    fid = fopen(filename);
 
-%disregard header info
-for h=1:2;
-    crap=fgetl(fid);
-end
-crap=fscanf(fid,'%s',5);
-duration=fscanf(fid,'%f',1);
-crap=fscanf(fid,'%s',1);
-num_channels=fscanf(fid,'%f',1);
-for h=1:5;
-    crap=fgetl(fid);
-end
-crap=fscanf(fid,'%s',1);
+    % Initialize variables
+    samp_rate = [];
+    channel_names = [];
+    range = [];
+    time = [];
+    data = [];
+    num_blank_rows = 3; % Specific to *.anc file type from Cortex
 
-channel_name='';
-channel_name=fgetl(fid);
-j=1;
-jl=length(channel_name);
+    % Read and process headers
+    while (~feof(fid))
+        line = fgetl(fid);
 
-for i=1:(num_channels)
-    name=sscanf(channel_name(j:jl),'%s',1);
-    ii=findstr(channel_name(j:jl),name);
-    j=j+ii(1)+length(name);
-    channel_names(i,1)=cellstr(name);
-end
+        % Exit if blank line after headers
+        if isempty(line)
+            break;
+        end
+        
+        % Process relevant headers
+        line_split = strsplit(line, '\t');
+        line_split = strtrim(line_split); % remove extra spaces
+        
+        for i = 1:length(line_split)
+            if contains(line_split{i}, 'Trial_Name:')
+                if i < length(line_split)
+                    Trial_Name = line_split{i+1};
+                end
+            elseif contains(line_split{i}, 'Duration(Sec.):')
+                if i < length(line_split)
+                    Duration = str2double(line_split{i+1});
+                end
+            elseif contains(line_split{i}, '#Channels:')
+                if i < length(line_split)
+                    Num_Channels = str2double(line_split{i+1});
+                end
+            elseif contains(line_split{i}, 'PreciseRate:')
+                if i < length(line_split)
+                    samp_rate = str2double(line_split{i+1});
+                end
+            end
+        end
+    end
+    
+    % Read and ignore 3 blank rows
+    for ii = 1:num_blank_rows
+        fgetl(fid);
+    end
+        
+    % Read Channel Names
+    channel_names_line = fgetl(fid);
+    channel_names_split = strsplit(channel_names_line, '\t');
+    channel_names_split = strtrim(channel_names_split); % trim each element
+    channel_names = channel_names_split(2:end); % skip the first element
+    
+    % Remove any empty cells at the end
+    channel_names = channel_names(~cellfun('isempty', channel_names));
+    
+    % Read and ignore the "Rate" line
+    fgetl(fid);
 
-crap=fscanf(fid,'%s',1);
-for i=1:num_channels;
-    samp_rate(i)=fscanf(fid,'%f',1);
+    % Read Range
+    range_line = fgetl(fid);
+    range_split = strsplit(range_line, '\t');
+    range_split = strtrim(range_split); % trim each element
+    range = str2double(range_split(2:end)); % skip the first element
+
+    % Remove any NaN at the end
+    range = range(~isnan(range));
+
+    % Read Data
+    data_cell = textscan(fid, repmat('%f', 1, Num_Channels + 1), 'Delimiter', '\t');
+    
+    % Close the file
+    fclose(fid);
+    
+    % Separate time and data
+    data_matrix = cell2mat(data_cell);
+    time = data_matrix(:, 1);
+    data = data_matrix(:, 2:end);
 end
-crap=fscanf(fid,'%s',1);
-for i=1:num_channels;
-    range(i)=fscanf(fid,'%f',1);
-end
-time=zeros(round(duration*samp_rate(1)),1);
-data=zeros(round(duration*samp_rate(1)),num_channels);
-i=1;
-for i=1:length(time)
-    line_temp=fscanf(fid,'%f',num_channels+1);
-   for j=1:length(line_temp);
-   	data(i,j)=line_temp(j);
-   end
-end;
-time=data(:,1);
-data=data(:,2:size(data,2));

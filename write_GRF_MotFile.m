@@ -3,7 +3,7 @@ repoDir = [pwd,'\'] ;
 addpath([repoDir, 'common']);
 
 % User inputs if you'd like
-dataDir = [repoDir 'Data\overgroundForces\'] ;
+dataDir = uigetdir(pwd,'Select folder with data');
 cd(dataDir)
 
 freq_filtering = 12 ; % lpCutoffFreq for generic force data
@@ -35,8 +35,8 @@ nonGaitPrefixes = {'DJ','squat','STS', 'static'} ;
 
 if manuallySelectTrials
 % Load file(s) to be converted.
-    display('Select *.anc files to convert into motion files.');
-    [files,inpath]=uigetfile([dataDir '*.anc'],'Select analog files with forces','multiselect','on');
+    disp('Select *.anc files to convert into motion files.');
+    [files,inpath]=uigetfile('*.anc','Select analog files with forces','multiselect','on');
     files=cellstr(files);
     cd(inpath)
 else
@@ -57,16 +57,16 @@ else
 end
 
 
-[a b] = size(files);
-for i=1:b;
+[a, b] = size(files);
+for i=1:b
     clear FPData
     clear rightmoments
     clear leftmoments
     infile=char(files(:,i));
     [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_anc(inpath,infile);
 %     time_forces=[time(1:size(time,1)-1)];
-    time_forces = time ;
-    samprate_a = samp_rate(strmatch('F1X',channel_names));
+    time_forces = time;
+    % samprate_a = samp_rate(strmatch('F1X',channel_names));
 
         % 16-bit system 2^16 = 65536
     % range is given in milivolts, so multiply by 0.001 to make volts
@@ -82,7 +82,7 @@ for i=1:b;
         
         % Create raw matrix of forces
         forceraw = zeros(size(data,1),length(forcenames)) ;
-        for p = 1:size(forcenames,1) ;
+        for p = 1:size(forcenames,1) 
             forceindicies(p) = find(strcmp(channel_names,forcenames(p,:))) ;
             forceraw(:,p) = data(:,forceindicies(p)) ;
         end
@@ -103,14 +103,14 @@ for i=1:b;
             % This structure includes forces and COP in the
             % following order: Fx Fy Fz COPx COPy COPz Tz
                
-            forces_Nm = Analog2Force_TMrunning(forceraw,TreadmillCalibMatrix,filt_freq,samprate_a,thresh_high,thresh_low) ;
+            forces_Nm = Analog2Force_TMrunning(forceraw,TreadmillCalibMatrix,filt_freq,samp_rate,thresh_high,thresh_low) ;
             
             % % detect if forces are acting on right or left foot here
             infile=strrep(infile,'.anc','.trc');
-            [header_m data_m] = TRCload([inpath infile]) ;
+            [header_m, data_m] = TRCload([inpath infile]) ;
             time_m = data_m(:,strmatch('Time',header_m.markername)) ;
         
-            analogSampMult = samprate_a/header_m.samplerate ;
+            analogSampMult = samp_rate/header_m.samplerate ;
         
             % Use x position of heel marker to decide if heel strike is right
             % or left
@@ -120,7 +120,7 @@ for i=1:b;
             l_calc_x = data_m(:,inds.l_calc) ;
             
             % Upsample marker data if force data hasn't been downsampled
-            if length(forces_Nm)>length(r_calc_x) ;
+            if length(forces_Nm)>length(r_calc_x) 
                 r_calc_x = repelem(r_calc_x,analogSampMult) ;
                 l_calc_x = repelem(l_calc_x,analogSampMult) ;
             end
@@ -128,9 +128,9 @@ for i=1:b;
             % Detect stance phase 
             onGround = find(forces_Nm(:,3)) ; 
             HS = onGround(find(diff(onGround) > 1)+1) ; % look for large jump in time between non-zero forces
-            TO = onGround(find(diff(onGround) > 1)) ;
+            TO = onGround(diff(onGround) > 1) ;
         
-            if forces_Nm(1,3) > 0 ; % if force at beginning of trial
+            if forces_Nm(1,3) > 0  % if force at beginning of trial
                 HS = [onGround(1)+1;HS] ; %set HS(1) to 1
                 else HS = [find(forces_Nm(:,3),1,'first'); HS] ;
             end
@@ -148,7 +148,7 @@ for i=1:b;
         
             % Make two separate matrices of left and right forces based on dif.
             % between x position of r and l calcaneous markers on 2nd step
-            if (r_calc_x(stepInds(2,1)) - l_calc_x(stepInds(2,1)))>0 ; %second step is right foot
+            if (r_calc_x(stepInds(2,1)) - l_calc_x(stepInds(2,1)))>0  %second step is right foot
                 r_stepInds = stepInds(2:2:length(stepInds),:) ;
                 l_stepInds = stepInds(1:2:length(stepInds),:) ;
             else
@@ -375,7 +375,7 @@ for i=1:b;
         
         % Create raw matrix of forces
         forceraw = zeros(size(data,1),length(forcenames)) ;
-        for p = 1:size(forcenames,1) ;
+        for p = 1:size(forcenames,1) 
             forceindicies(p) = find(strcmp(channel_names,forcenames(p,:))) ;
             forceraw(:,p) = data(:,forceindicies(p)) ;
         end
@@ -550,7 +550,7 @@ for i=1:b;
         dims = {'x','y','z'} ;
         for iPlate = 1:nPlates
             for j = 1:length(dTypes)
-                for k = 1:length(dims) ;
+                for k = 1:length(dims) 
                     colNames{end+1} = [plateNamesWalking{iPlate} '_' dTypes{j} dims{k}] ;
                 end
             end
@@ -590,7 +590,7 @@ for i=1:b;
         dims = {'x','y','z'} ;
         for iPlate = 1:nPlates
             for j = 1:length(dTypes)
-                for k = 1:length(dims) ;
+                for k = 1:length(dims) 
                     colNames{end+1} = [plateNamesOG{iPlate} '_' dTypes{j} dims{k}] ;
                 end
             end
