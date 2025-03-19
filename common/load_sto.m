@@ -1,6 +1,5 @@
-function [data,headers]=load_sto(inpath,infile);
+function [data,headers]=load_sto(inpath,infile)
 
-% cd W:\OA_GaitRetraining\GastrocAvoidance\DATA
 if nargin < 1
     [infile,inpath]=uigetfile('*.sto');
 end
@@ -9,7 +8,7 @@ fid=fopen([inpath '\' infile],'r');
 % disp(['Loading file...' infile] );
 %read the file name line
 line=fgetl(fid);
-while isempty(strfind(line,'nRows'))
+while ~contains(line,'nRows')
 line=fgetl(fid);
 end
 
@@ -18,7 +17,7 @@ end
 line=fgetl(fid);	nc=sscanf(line(10:length(line)),'%f');
 
 line = 'a' ; 
-while ~strcmp('endheader',line) ;
+while ~strcmp('endheader',line) 
     line=fgetl(fid);
 end
 % Load the headers

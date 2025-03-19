@@ -72,12 +72,6 @@ for ii = 1:size(forcesV,1)
                          -forces_units(ii,13:15) COPx(3) COPy(3) h Tz(3)] ;
 end 
 
-% % Critically Damped Filter for Forces and Moments
-% forces_proc(:,1:3) = CriticallyDampedFilter(forces_proc(:,1:3),2,[],lpFiltFreq,samp_rate);
-% forces_proc(:,7:10) = CriticallyDampedFilter(forces_proc(:,7:10),2,[],lpFiltFreq,samp_rate);
-% forces_proc(:,14:17) = CriticallyDampedFilter(forces_proc(:,14:17),2,[],lpFiltFreq,samp_rate);
-% forces_proc(:,21) = CriticallyDampedFilter(forces_proc(:,21),2,[],lpFiltFreq,samp_rate);
-
 % Remove all values when foot isn't on forceplate
 zero_FP1 = find(forces_proc(:,3)>threshold == 0) ;
 zero_FP2 = find(forces_proc(:,10)>threshold == 0) ;
@@ -88,6 +82,7 @@ forces_proc(zero_FP3,15:21) = 0 ;
 
 forces_proc_meters = forces_proc ;
 
+%% Plot forces for debugging
 % figure
 % for i = 1:21
 %     subplot(3,7,i)

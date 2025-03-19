@@ -1,9 +1,11 @@
-function [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_anc(inpath, infile)
-%OPEN_ANC is used to open analog data files from Motion Analysis Realtime
-%   output (*.anc).  The number of channels, samp rate and range are determined
+function [samp_rate, channel_names, range, time, data, inpath, fileroot]= ...
+    open_anc(inpath, infile)
+% open_anc is used to open analog data files from Motion Analysis Cortex
+%   (*.anc).  The number of channels, samp rate and range are determined
 %   from the file header.
 %
-% Written by Sam Hamner, March 17, 2025
+% Re-written by Sam Hamner, March 17, 2025
+
     % Construct the full file path
     filename = fullfile(inpath, infile);
     fileroot = extractBefore(infile,'.');
@@ -19,7 +21,7 @@ function [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_an
     data = [];
     num_blank_rows = 3; % Specific to *.anc file type from Cortex
 
-    % Read and process headers
+    % Read and process headers until end of file
     while (~feof(fid))
         line = fgetl(fid);
 
@@ -80,7 +82,8 @@ function [samp_rate, channel_names, range, time, data, inpath, fileroot]=open_an
     range = range(~isnan(range));
 
     % Read Data
-    data_cell = textscan(fid, repmat('%f', 1, Num_Channels + 1), 'Delimiter', '\t');
+    data_cell = textscan(fid, repmat('%f', 1, Num_Channels + 1),...
+        'Delimiter', '\t');
     
     % Close the file
     fclose(fid);

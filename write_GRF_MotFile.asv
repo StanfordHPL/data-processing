@@ -1,4 +1,3 @@
-% Updated by Sam Hamner, 19 March 2025
 clear ; close all ; format compact ; clc
 
 %% Uncomment to select MATLAB scripts directory, if not already added to path list
@@ -40,8 +39,7 @@ nonGaitPrefixes = {'DJ','squat','STS', 'static'} ;
 % Load *.anc files from Cortx to be converted to *.mot for OpenSim
 if manuallySelectTrials
     disp('Select *.anc files to convert into motion files.');
-    [files,inpath]=uigetfile('*.anc',...
-        'Select analog files with forces','multiselect','on');
+    [files,inpath]=uigetfile('*.anc','Select analog files with forces','multiselect','on');
     files=cellstr(files);
     cd(inpath)
 else
@@ -116,9 +114,7 @@ for i=1:b
             % This structure includes forces and COP in the
             % following order: Fx Fy Fz COPx COPy COPz Tz
                
-            forces_Nm = Analog2Force_TM(forceraw,...
-                TreadmillCalibMatrix,filt_freq,samp_rate,thresh_high,...
-                thresh_low) ;
+            forces_Nm = Analog2Force_TMrunning(forceraw,TreadmillCalibMatrix,filt_freq,samp_rate,thresh_high,thresh_low) ;
             
             % % detect if forces are acting on right or left foot here
             infile=strrep(infile,'.anc','.trc');
@@ -550,25 +546,24 @@ for i=1:b
     
     
 %% Write forces files
+
     if walking || treadmill % write out a per-foot Grf file
         % Write Forces File
         npts = length(rightforces);
 
-        input_file = strrep(infile, '.trc', ...
-            ['_forces_filt' num2str(freq_filtering_walk) 'Hz.mot']);
+        input_file = strrep(infile, '.trc', ['_forces_filt' num2str(freq_filtering_walk) 'Hz.mot']);
 
         fid = fopen([inpath,input_file],'w');
 
         % Write the header
-        colNames = {'time'} ;
+                colNames = {'time'} ;
         nPlates = 2 ;
         dTypes = {'ground_force_v','ground_force_p','ground_torque_'} ;
         dims = {'x','y','z'} ;
         for iPlate = 1:nPlates
             for j = 1:length(dTypes)
                 for k = 1:length(dims) 
-                    colNames{end+1} = ...
-                        [plateNamesWalking{iPlate} '_' dTypes{j} dims{k}];
+                    colNames{end+1} = [plateNamesWalking{iPlate} '_' dTypes{j} dims{k}] ;
                 end
             end
         end
@@ -581,13 +576,10 @@ for i=1:b
         fprintf(fid,'%s\n','endheader');
         fprintf(fid,repmat('%s\t',1,9*nPlates+1),colNames{:});
         fprintf(fid,'\n') ;
-        
-        % Write the data to file
-        % New file order is RFx, RFy, RFz, RCOPx, RCOPy, RCOPz, ...
-        % LFx, LFy, LFz, LCOPx, LCOPy, LCOPz, ...
-        % RMx, RMy, RMz, LMx, LMy, LMz
+        % Write the data
         newdata=[rightforces rightCOP rightmoments leftforces leftCOP leftmoments];
         for j=1:npts
+            % New file order is RFx, RFy, RFz, RCOPx, RCOPy, RCOPz, LFx, LFy, LFz, LCOPx, LCOPy, LCOPz, RMx, RMy, RMz, LMx, LMy, LMz
             fprintf(fid,'%f',time_forces(j));
             fprintf(fid,'\t%10.6f',newdata(j,:));
             fprintf(fid,'\n');
@@ -600,8 +592,7 @@ for i=1:b
         % Write Forces File
         npts = size(GRF_write,1);
 
-        input_file = strrep(infile, '.anc', ...
-            ['_forces_filt' num2str(freq_filtering) 'Hz.mot']);
+        input_file = strrep(infile, '.anc', ['_forces_filt' num2str(freq_filtering) 'Hz.mot']);
 
         fid = fopen([tempdir,input_file],'w');
         
@@ -612,8 +603,7 @@ for i=1:b
         for iPlate = 1:nPlates
             for j = 1:length(dTypes)
                 for k = 1:length(dims) 
-                    colNames{end+1} = ...
-                        [plateNamesOG{iPlate} '_' dTypes{j} dims{k}] ;
+                    colNames{end+1} = [plateNamesOG{iPlate} '_' dTypes{j} dims{k}] ;
                 end
             end
         end

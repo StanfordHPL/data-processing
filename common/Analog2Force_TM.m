@@ -1,4 +1,4 @@
-function [forces_proc_meters] = Analog2Force(forcesV,TreadmillCalibMatrix,filtfreq,samp_rate,threshold_high,threshold_low) ;
+function [forces_proc_meters] = Analog2Force_TM(forcesV,TreadmillCalibMatrix,filtfreq,samp_rate,threshold_high,threshold_low) 
 
 disp('You are using new Bertec TM. If you want the old treadmill settings, theres a file Analog2Force_old with those settings.')
 % [Fxyz_1 COPxyz_1 Tz_1 Fxyz_2 COPxyz_2 Tz_2]
@@ -14,13 +14,9 @@ disp('You are using new Bertec TM. If you want the old treadmill settings, there
 % filter first
 unfiltered = forcesV ;
 
-%
-
 if isempty(filtfreq) == 0
     [B_f,A_f] = butter(2,filtfreq/(samp_rate/2)) ; % % % Was 4 until Scott changed it 1/19/18 b/c filtfilt doubles order
     forces_filt= filtfilt(B_f,A_f,forcesV) ;
-%     forces_filt = CriticallyDampedFilter(forcesV,2,[],filtfreq,samp_rate);
-%     disp('applied Critically Damped Filter')
 else
     disp('Warning: Did not filter')
     forces_filt = forcesV ;
@@ -28,8 +24,8 @@ end
 
 h = 0 ; %meters, height of belt off coordinate system. The forces are reported at the height of the belt on the new treadmill
 
-forces_units = zeros(size(forcesV)) ; % Converted into N and Nm - filtered (Fx, Fy, Fz, Mx, My, Mz)
-unfilteredforces_units = forces_units ; % Convereted into N and Nm - unfiltered (Fx, Fy, Fz, Mx, My, Mz)
+% forces_units = zeros(size(forcesV)) ; % Converted into N and Nm - filtered (Fx, Fy, Fz, Mx, My, Mz)
+% unfilteredforces_units = forces_units ; % Convereted into N and Nm - unfiltered (Fx, Fy, Fz, Mx, My, Mz)
 forces_proc = zeros(size(forcesV,1),14) ; % Matrix with calculated stuff (Fx, Fy, Fz, COPx, COPy, COPz, Tz)
 CalibMat12 = [TreadmillCalibMatrix.r,zeros(6,6);zeros(6,6),TreadmillCalibMatrix.l] ;
 
@@ -60,8 +56,6 @@ for ii = 1:size(forcesV,1)
         COPay2 COPax2+1.124 0 Taz2] ;
 end
 
-%
-
 % unfilteredforces_units #3 and #9 = unfiltered vertical forces in Newtons
 forces_proc(:,3) = unfilteredforces_units(:,3) ;
 forces_proc(:,10) = unfilteredforces_units(:,9) ;
@@ -70,6 +64,6 @@ RLinds = [1 7 3;8 14 10] ; % Right and left indicies
 forces_proc_2 = FiltBertecForces(forces_proc,RLinds,samp_rate,filtfreq,threshold_high,threshold_low) ;
 forces_proc_meters = forces_proc_2 ;
 
-if isempty(filtfreq) == 1 ;
+if isempty(filtfreq) == 1 
     forces_proc_meters = forces_proc ;
 end
