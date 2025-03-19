@@ -1,14 +1,15 @@
 clear ; close all ; format compact ; clc
 repoDir = [pwd,'\'] ;
-addpath([repoDir, 'common']);
+% addpath([repoDir, 'common']);
 
 % User inputs if you'd like
 dataDir = uigetdir(pwd,'Select folder with data');
+% dataDir = 'G:\Shared drives\HPL_Drive\StaBLE_Study\Validation study\pilot\StaBLE_pilot_2025_02_14\Trimmed_Generated_files';
 cd(dataDir)
 
 freq_filtering = 12 ; % lpCutoffFreq for generic force data
 freq_filtering_walk = 12; %lpCutoffFreq for walking and treadmill force data
-freq_filtering_run = 15; % lpCutoffFreq for force and marker data
+freq_filtering_run = 20; % lpCutoffFreq for force and marker data
 zero_threshold = 20 ; % forces below this go to 0
 
 % thresholds for treadmill running
@@ -25,7 +26,7 @@ manuallySelectTrials = true;
 walking= 1 ; % this does not sum the treadmill forces if true
 
 % if not manual, change these
-isGait = false ;
+isGait = true ;
 % gaitPrefixes = {'walking','running'}
 % nonGaitPrefixes = {'squat','STS','DJ','static'}
 gaitPrefixes = {'walking'} ;
@@ -38,6 +39,8 @@ if manuallySelectTrials
     disp('Select *.anc files to convert into motion files.');
     [files,inpath]=uigetfile('*.anc','Select analog files with forces','multiselect','on');
     files=cellstr(files);
+    % files = {'Trimmed_gait-tandem1_samner_test.anc'};
+    % inpath = dataDir;
     cd(inpath)
 else
     if isGait
@@ -399,7 +402,8 @@ for i=1:b
             LFoot=pos(:,LFoot*3-2:LFoot*3)/1000;
 
             % downsample forces to compare with motion data
-            match_forces=downsample(forces_proc_meters,20);
+            downsample_ratio = samp_rate / f;
+            match_forces=downsample(forces_proc_meters,downsample_ratio);
             match_forces=match_forces(1:length(LFoot),:);
 
             leftforces=zeros(length(forces_proc_meters),3); leftmoments=zeros(length(forces_proc_meters),3); leftCOP=zeros(length(forces_proc_meters),3);  
